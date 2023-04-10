@@ -1,0 +1,93 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+
+#define MAX_PROCESSES 10
+#define QUANTUM 2
+
+typedef struct {
+    int pid;
+    int arrival_time;
+    int burst_time;
+    int remaining_time;
+    int waiting_time;
+    int turnaround_time;
+} process_t;
+
+void generate_processes(process_t *processes, int num_processes);
+void run_scheduler(process_t *processes, int num_processes, int total_time);
+void print_process_stats(process_t *processes, int num_processes);
+
+int main() {
+    srand(time(NULL)); // Initialize random number generator
+
+    process_t processes[MAX_PROCESSES];
+    int num_processes = MAX_PROCESSES;
+    int total_time = 100;
+
+    generate_processes(processes, num_processes);
+
+    run_scheduler(processes, num_processes, total_time);
+
+    print_process_stats(processes, num_processes);
+
+    return 0;
+}
+
+void generate_processes(process_t *processes, int num_processes) {
+    int i;
+    for (i = 0; i < num_processes; i++) {
+        processes[i].pid = i;
+        processes[i].arrival_time = rand() % 10;
+        processes[i].burst_time = rand() % 10 + 1;
+        processes[i].remaining_time = processes[i].burst_time;
+        processes[i].waiting_time = 0;
+        processes[i].turnaround_time = 0;
+    }
+}
+
+void run_scheduler(process_t *processes, int num_processes, int total_time) {
+    int i, j;
+    int current_time = 0;
+    int num_completed = 0;
+    int quantum_time = 0;
+
+    while (num_completed < num_processes && current_time < total_time) {
+        for (i = 0; i < num_processes; i++) {
+            if (processes[i].arrival_time <= current_time && processes[i].remaining_time > 0) {
+                if (processes[i].remaining_time <= QUANTUM) {
+                    quantum_time = processes[i].remaining_time;
+                } else {
+                    quantum_time = QUANTUM;
+                }
+
+                processes[i].remaining_time -= quantum_time;
+                current_time += quantum_time;
+
+                if (processes[i].remaining_time == 0) {
+                    num_completed++;
+
+                    processes[i].turnaround_time = current_time - processes[i].arrival_time;
+                    processes[i].waiting_time = processes[i].turnaround_time - processes[i].burst_time;
+                }
+            }
+        }
+    }
+}
+
+void print_process_stats(process_t *processes, int num_processes) {
+    int i;
+    int total_waiting_time = 0;
+    int total_turnaround_time = 0;
+
+    printf("Process ID\tArrival Time\tBurst Time\tWaiting Time\tTurnaround Time\n");
+    for (i = 0; i < num_processes; i++) {
+        printf("%d\t\t%d\t\t%d\t\t%d\t\t%d\n", processes[i].pid, processes[i].arrival_time, processes[i].burst_time, processes[i].waiting_time, processes[i].turnaround_time);
+
+        total_waiting_time += processes[i].waiting_time;
+        total_turnaround_time += processes[i].turnaround_time;
+    }
+
+    printf("Average waiting time: %.2f\n", (float)total_waiting_time / num_processes);
+    printf("Average turnaround time: %.2f\n", (float)total_turnaround_time / num_processes);
+}
